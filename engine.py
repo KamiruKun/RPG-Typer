@@ -32,6 +32,18 @@ WORDS_DB = [
     "loop",
     "string",
     "integer",
+    "sudo",
+    "./",
+    "73951",
+    "home",
+    "sudo rm -rf /",
+    "sudo su",
+    "chmod",
+    "bash",
+    "fish",
+    "hyprland",
+    "gnome",
+    "sudo cp -r ./ /home",
 ]
 
 
