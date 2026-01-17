@@ -13,10 +13,10 @@ class GameUI:
         curses.use_default_colors()
         self.apply_theme()
 
-        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Correct
-        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)  # Error
+        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Poprawne
+        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)  # Błąd
         curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLACK)  # UI
-        curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # Highlight
+        curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # Podświetlenie
 
         self.engine = GameEngine()
 
@@ -33,13 +33,16 @@ class GameUI:
         subtitle = f"Best WPM: {self.player.best_wpm:.1f}"
 
         self.stdscr.addstr(
-            h // 2 - 5,
-            (w - len(title)) // 2,
+            max(0, h // 2 - 5),
+            max(0, (w - len(title)) // 2),
             title,
             curses.color_pair(3) | curses.A_BOLD,
         )
         self.stdscr.addstr(
-            h // 2 - 3, (w - len(subtitle)) // 2, subtitle, curses.color_pair(4)
+            max(0, h // 2 - 3),
+            max(0, (w - len(subtitle)) // 2),
+            subtitle,
+            curses.color_pair(4),
         )
 
         options = [
@@ -50,7 +53,9 @@ class GameUI:
             "[ Q ] Quit",
         ]
         for idx, option in enumerate(options):
-            self.stdscr.addstr(h // 2 + idx, (w - len(option)) // 2, option)
+            self.stdscr.addstr(
+                max(0, h // 2 + idx), max(0, (w - len(option)) // 2), option
+            )
 
         self.stdscr.refresh()
 
@@ -58,14 +63,16 @@ class GameUI:
         while True:
             self.stdscr.clear()
             h, w = self.stdscr.getmaxyx()
-            self.stdscr.addstr(2, (w - 14) // 2, "--- THEMES ---", curses.color_pair(3))
+            self.stdscr.addstr(
+                2, max(0, (w - 14) // 2), "--- THEMES ---", curses.color_pair(3)
+            )
 
             for i, theme in enumerate(self.player.unlocked_themes):
                 prefix = "[X]" if theme == self.player.active_theme else "[ ]"
                 text = f"{i + 1}. {prefix} {theme}"
-                self.stdscr.addstr(4 + i, (w - len(text)) // 2, text)
+                self.stdscr.addstr(4 + i, max(0, (w - len(text)) // 2), text)
 
-            self.stdscr.addstr(h - 2, (w - 25) // 2, "Press B to go back")
+            self.stdscr.addstr(h - 2, max(0, (w - 25) // 2), "Press B to go back")
             self.stdscr.refresh()
 
             try:
@@ -102,28 +109,29 @@ class GameUI:
 
         for i, line in enumerate(lines):
             color = curses.color_pair(4) if "---" in line else curses.color_pair(0)
-            self.stdscr.addstr(h // 2 - 5 + i, (w - len(line)) // 2, line, color)
+            self.stdscr.addstr(
+                max(0, h // 2 - 5 + i), max(0, (w - len(line)) // 2), line, color
+            )
 
         self.stdscr.getch()
 
     def show_settings_screen(self):
-        """Nowe menu ustawień"""
         while True:
             self.stdscr.clear()
             h, w = self.stdscr.getmaxyx()
 
             title = "--- SETTINGS ---"
             self.stdscr.addstr(
-                h // 2 - 5, (w - len(title)) // 2, title, curses.color_pair(3)
+                h // 2 - 5, max(0, (w - len(title)) // 2), title, curses.color_pair(3)
             )
 
             opt_diff = f"[ 1 ] Difficulty: {self.engine.difficulty.upper()}"
             opt_words = f"[ 2 ] Words per round: {self.engine.word_count}"
             opt_back = "[ B ] Back to Menu"
 
-            self.stdscr.addstr(h // 2 - 2, (w - len(opt_diff)) // 2, opt_diff)
-            self.stdscr.addstr(h // 2 - 1, (w - len(opt_words)) // 2, opt_words)
-            self.stdscr.addstr(h // 2 + 2, (w - len(opt_back)) // 2, opt_back)
+            self.stdscr.addstr(h // 2 - 2, max(0, (w - len(opt_diff)) // 2), opt_diff)
+            self.stdscr.addstr(h // 2 - 1, max(0, (w - len(opt_words)) // 2), opt_words)
+            self.stdscr.addstr(h // 2 + 2, max(0, (w - len(opt_back)) // 2), opt_back)
 
             self.stdscr.refresh()
 
@@ -166,7 +174,16 @@ class GameUI:
 
             self.stdscr.addstr(2, 2, "Type:", curses.A_BOLD)
 
+            margin = 2
+            max_width = w - (margin * 2) - 1
+
             for i, char in enumerate(target_text):
+                char_x = margin + (i % max_width)
+                char_y = 4 + (i // max_width)
+
+                if char_y >= h - 3:
+                    break
+
                 color = curses.color_pair(0)
                 if i < len(current_text):
                     if current_text[i] == char:
@@ -176,7 +193,10 @@ class GameUI:
                 elif i == len(current_text):
                     color = curses.color_pair(4) | curses.A_REVERSE
 
-                self.stdscr.addch(4, 2 + i, char, color)
+                try:
+                    self.stdscr.addch(char_y, char_x, char, color)
+                except curses.error:
+                    pass
 
             if start_time:
                 elapsed = time.time() - start_time
@@ -262,7 +282,9 @@ class GameUI:
 
         for i, line in enumerate(lines):
             color = curses.color_pair(1) if "LEVEL UP" in line else curses.color_pair(0)
-            self.stdscr.addstr(h // 2 - 6 + i, (w - len(line)) // 2, line, color)
+            self.stdscr.addstr(
+                max(0, h // 2 - 6 + i), max(0, (w - len(line)) // 2), line, color
+            )
 
         self.stdscr.getch()
 
